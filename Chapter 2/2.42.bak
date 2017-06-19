@@ -1,0 +1,34 @@
+#lang sicp
+;routine
+(define (accumulate op init seqs)
+  (if (null? seqs)
+      init
+      (op (car seqs)
+          (accumulate op init (cdr seqs)))))
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+(define (filter pred items)
+  (define (conditionCons front back)
+    (if (pred front)
+        (cons front back)
+        back))
+  (accumulate conditionCons (list) items))
+(define (enumerate-interval start end)
+  (if (< end start)
+      nil
+      (cons start (enumerate-interval (+ start 1) end))))
+
+;solution
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position new-row k rest-of-queens))
+                 (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))

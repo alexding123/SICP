@@ -1,0 +1,21 @@
+#lang sicp
+;routine
+(define (accumulate op init seqs)
+  (if (null? seqs)
+      init
+      (op (car seqs)
+          (accumulate op init (cdr seqs)))))
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+(define (enumerate-interval start end)
+  (if (< end start)
+      nil
+      (cons start (enumerate-interval (+ start 1) end))))
+
+;solution
+(define (three-var-pairs n)
+  (flatmap (lambda (i)
+             (map (lambda(j)
+                    (map (lambda(i)()) (enumerate-interval j n)))
+                  (enumerate-interval i n))
+           (enumerate-interval 1 n))))
