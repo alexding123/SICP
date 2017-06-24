@@ -35,6 +35,53 @@
         ((number? datum) datum)
         (else (display "Bad tagged datum -- CONTENTS" datum))))
 
+(define (level type) 
+  (cond ((eq? type 'scheme-number) 0) 
+        ((eq? type 'rational) 1) 
+        ((eq? type 'complex) 2)
+        ((eq? type 'polynomial) 3)
+        ((bool? type) -1)
+        (else (display "type not found -- LEVEL" type))))
+
+(define (raise-to desired-arg arg)
+  (if (< (level (type-tag arg)) (level desired-arg))
+      (raise-to desired-arg (raise arg))
+      arg))
+(define (map-raise-to desired-arg)
+  (lambda (a) (raise-to desired-arg a)))
+(define (highest-level args)
+  (if (null? args)
+      (display "no argument given -- HIGHEST-LEVEL")
+      (if (null? (cdr args))
+          (car args)
+          (highest-level (cons (if (> (level (car args)) (level (cadr args))) (car args) (cadr args)) (cddr args))))))
+
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (let ((highest (highest-level type-tags)))
+            (let ((raised (map (map-raise-to highest) args)))
+              (let ((new-proc (get op (map type-tag raised))))
+                (if new-proc
+                    (drop (apply new-proc (map contents raised)))
+                    (display "No method for these types -- APPLY-GENERIC" (list op type-tags))
+                    ))))))))
+(define (drop x)
+  (if (bool? x)
+      x
+      (let ((lower-level (project x)))
+        (if lower-level
+            (if (equ? (raise lower-level) x)
+                (drop lower-level)
+                x)
+            x))))
+(define (project x)
+  (if (<= (level (type-tag x)) 0)
+      #f
+      (apply-generic 'project x)))
+
 ; generic functions
 (define (square x)
   (mul x x))
@@ -44,7 +91,9 @@
   (and (number? a) (number? b) (= a b)))
 (define (bool? b)
   (or (eq? b #t) (eq? b #f)))
-; packages provided in book
+
+
+; packages
 (define (install-scheme-number-package)
   (define (tag x)
     (attach-tag 'scheme-number x))
@@ -80,12 +129,12 @@
   (define (numer x) (car x))
   (define (denom x) (cdr x))
   (define (add-rat x y)
-    (make-rat (+ (* (numer x) (denom y))
-                 (* (numer y) (denom x)))
-              (* (denom x) (denom y))))
+    (make-rat (add (mul (numer x) (denom y))
+                 (mul (numer y) (denom x)))
+              (mul (denom x) (denom y))))
   (define (mul-rat x y)
-    (make-rat (* (numer x) (numer y))
-              (* (denom x) (denom y))))
+    (make-rat (mul (numer x) (numer y))
+              (mul (denom x) (denom y))))
  
   (define (rational->complex x)
     (make-complex-from-real-imag (tag x) 0))
@@ -93,10 +142,7 @@
   (define (rational->scheme-number r) (round (/ (numer r) (denom r))))
   
   (define (make-rat n d)
-    (define g (gcd (abs n) (abs d)))
-    (define(make n d) (cons (/ n g) (/ d g)))
-    (cond ((< d 0) (make (- n) (- d)))
-          (else (make n d))))
+    (cons n d))
 
   ;; interface to rest of the system
   (define (tag x)
@@ -296,6 +342,14 @@
 
   ; representing terms and term lists
   (define (add-poly p1 p2)
+    (display (variable p1))
+    (display " ")
+    (display (variable p2))
+    (newline)
+    (display p1)
+    (newline)
+    (display p2)
+    (newline)
     (if (same-variable? (variable p1) (variable p2))
         (make-poly (variable p1)
                    (add-terms (term-list p1) (term-list p2)))
@@ -477,56 +531,8 @@
 (install-complex-package)
 (install-polynomial-package)
 
-; solution
-
-(define (level type) 
-  (cond ((eq? type 'scheme-number) 0) 
-        ((eq? type 'rational) 1) 
-        ((eq? type 'complex) 2)
-        ((eq? type 'polynomial) 3)
-        ((bool? type) -1)
-        (else (display "type not found -- LEVEL" type))))
-
-(define (raise-to desired-arg arg)
-  (if (< (level (type-tag arg)) (level desired-arg))
-      (raise-to desired-arg (raise arg))
-      arg))
-(define (map-raise-to desired-arg)
-  (lambda (a) (raise-to desired-arg a)))
-(define (highest-level args)
-  (if (null? args)
-      (display "no argument given -- HIGHEST-LEVEL")
-      (if (null? (cdr args))
-          (car args)
-          (highest-level (cons (if (> (level (car args)) (level (cadr args))) (car args) (cadr args)) (cddr args))))))
-
-(define (apply-generic op . args)
-  (let ((type-tags (map type-tag args)))
-    (let ((proc (get op type-tags)))
-      (if proc
-          (apply proc (map contents args))
-          (let ((highest (highest-level type-tags)))
-            (let ((raised (map (map-raise-to highest) args)))
-              (let ((new-proc (get op (map type-tag raised))))
-                (if new-proc
-                    (drop (apply new-proc (map contents raised)))
-                    (display "No method for these types -- APPLY-GENERIC" (list op type-tags))
-                    ))))))))
-(define (drop x)
-  (if (bool? x)
-      x
-      (let ((lower-level (project x)))
-        (if lower-level
-            (if (equ? (raise lower-level) x)
-                (drop lower-level)
-                x)
-            x))))
-(define (project x)
-  (if (<= (level (type-tag x)) 0)
-      #f
-      (apply-generic 'project x)))
-
 ; tests
-(define poly1 (make-polynomial 'x (list (list 2 (make-polynomial 'x (list '(4 1)))) (list 0 -1))))
-(define poly2 (make-polynomial 'x '((2 1) (0 -1))))
-(add poly2 poly1)
+(define poly1 (make-polynomial 'x '((2 1)(0 1))))
+(define poly2 (make-polynomial 'x '((3 1)(0 1))))
+(define rf (make-rational poly1 poly2))
+(add rf rf)
