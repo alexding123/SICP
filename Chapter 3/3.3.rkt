@@ -1,0 +1,25 @@
+#lang sicp
+; solution
+(define (make-account balance password)
+  (define (withdraw amount)
+    (if (>= balance amount)
+        (begin (set! balance (- balance amount))
+               balance)
+        "Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (dispatch password-input m)
+    (if (eq? password password-input)
+        (cond ((eq? m 'withdraw) withdraw)
+              ((eq? m 'deposit) deposit)
+              (else (display "Unknown request -- MAKE-ACCOUNT")))
+        complain))
+  (define (complain . args)
+    "Incorrect password")
+  dispatch)
+
+; tests
+(define acc (make-account 100 'pw))
+((acc 'df 'withdraw) 200)
+((acc 'pw 'deposit) 10)

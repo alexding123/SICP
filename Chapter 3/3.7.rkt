@@ -1,0 +1,47 @@
+#lang sicp
+; from 3.4
+(define (make-account balance password)
+  (let ((error-count 0))
+    (define (withdraw amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                 balance)
+          "Insufficient funds"))
+    (define (deposit amount)
+      (set! balance (+ balance amount))
+      balance)
+    (define (make-dispatch pw)
+      (lambda (password-input m)
+        (if (eq? pw password-input)
+          (begin (reset-error-count)
+                  (cond ((eq? m 'withdraw) withdraw)
+                        ((eq? m 'deposit) deposit)
+                        ((eq? m 'new-account) make-dispatch)
+                        (else (display "Unknown request -- MAKE-ACCOUNT"))))
+          (begin (increase-error-count) complain))))
+    (define (reset-error-count)
+      (set! error-count 0))
+    (define (increase-error-count)
+      (set! error-count (+ 1 error-count))
+      (if (>= error-count 7)
+          (call-the-cops)
+          'done))
+    (define (complain . args)
+      "Incorrect password")
+(make-dispatch password)))
+
+(define (call-the-cops)
+  (display "FBI! Open the door!"))
+
+; solution
+(define (make-joint account old-password new-password)
+  ((account old-password 'new-account) new-password))
+  
+
+; tests
+(define acc (make-account 100 'pw))
+((acc 'df 'withdraw) 200)
+((acc 'pw 'deposit) 10)
+(define acc2 (make-joint acc 'pw 'new-pw))
+((acc2 'pw 'deposit) 100)
+((acc2 'new-pw 'deposit) 100)
