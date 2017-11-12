@@ -1,0 +1,4 @@
+#lang sicp
+(define (partial-sums s)
+  (stream-cons (stream-ar s)
+               (add-streams s (stream-cdr s))))

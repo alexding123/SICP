@@ -1,0 +1,10 @@
+#lang sicp
+(define (or-gate a1 a2 output)
+  (let ((inverted1 (make-wire))
+        (inverted2 (make-wire))
+        (and-inverted-1-2 (make-wire)))
+    (inverter a1 inverted1)
+    (inverter a2 inverted2)
+    (and-gate inverted1 inverted2 and-inverted-1-2)
+    (inverter and-inverted-1-2 output))
+  'ok)

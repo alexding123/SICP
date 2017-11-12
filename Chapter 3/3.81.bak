@@ -1,0 +1,4 @@
+#lang sicp
+(define (random-stream s)
+  (define (handle-command l)
+    (cond ((eq? l 'generate) (

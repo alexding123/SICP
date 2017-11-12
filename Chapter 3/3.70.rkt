@@ -1,0 +1,25 @@
+#lang sicp
+(define (merge-weighted s1 s2 weight)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else (if (< (weight (car s1)) (weight (car s2)))
+            (cons-stream (car s1)
+                         (merge-weighted (stream-cdr s1) s2 weight))
+            (cons-stream (car s2)
+                         (merge-weighted s1 (stream-cdr s2) weight))))))
+(define (weighted-pairs s1 s2 weight)
+  (cons-stream (list (stream-car s1) (stream-car s2))
+               (merge-weight (stream-map (lambda (x) (list (stream-car s1) x))
+                                         (stream-cdr s2))
+                             (weighted-pairs (stream-cdr s1) (stream-cdr s2) weight)
+                             weight)))
+
+(define (weight-a l)
+  (+ (car x) (cadr x)))
+(define stream-a (weighted-pairs integers integers weight-a))
+
+(define (weight-b l)
+  (+ (* 2 (car l)) (* 3 (cadr l)) (* 5 (car l) (cadr l))))
+(define stream-b (stream-filter
+                  (lambda (x) (or (divides? x 5) (divides? x 3) (divides? x 2)))
+                  (weighted-pairs integers integers weight-b)))

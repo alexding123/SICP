@@ -1,0 +1,11 @@
+#lang sicp
+(define (square x) (* x x))
+(define (weight l) (+ (square (car l)) (square (cadr l))))
+(define candidates (weighted-pairs integers integers weight))
+(define nums (my-filter candidates))
+(define (my-filter s)
+  (if (and (= (weight (stream-car s)) (weight (stream-cadr s)))
+           (= (weight (stream-cadr s)) (weight (stream-caddr s))))
+      (cons-stream (list (weight (stream-car s)) (stream-car s) (stream-cadr s) (stream-caddr s))
+                   (my-filter (cdr s)))
+      (my-filter (cdr s))))

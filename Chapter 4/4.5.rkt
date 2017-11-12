@@ -1,0 +1,22 @@
+#lang sicp
+(define (cond-special-clause? clause)
+  (eq? (cadr clause) '=>))
+(define (extended-cond-recipient clause)
+  (caddr clause))
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (cond ((cond-else-clause? first)
+               (if (null? rest)
+                   (sequence->exp (cond-actions first))
+                   (error "ELSE clauses isn't last -- COND->IF" clauses)))
+              ((cond-special-clause? first)
+               (make-if (cond-predicate first)
+                        (list (extended-cond-recipient first) (cond-predicate first))
+                        (expand-clauses rest)))
+              (else (make-if (cond-predicate first)
+                             (sequence->exp (cond-actions first))
+                             (expand-clauses rest)))))))
+            
